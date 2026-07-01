@@ -22,6 +22,10 @@ custom integration is installed in Home Assistant.
 Each group can include Home Assistant `media_player` entities. For Google Home
 devices, use the entities created by the Google Cast integration.
 
+Configured speech groups appear as HA Speaks sensor entities. The sensor state
+is the number of targets in the group, and the attributes list the media players
+and optional Alexa targets assigned to that group.
+
 ## TTS Setup
 
 The integration calls Home Assistant's modern `tts.speak` service by default.

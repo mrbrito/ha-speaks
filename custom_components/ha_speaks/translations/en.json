@@ -18,6 +18,7 @@
     "step": {
       "init": {
         "title": "Configure HA Speaks",
+        "description": "Existing speech groups:\n{groups}",
         "data": {
           "action": "Action"
         }
@@ -37,6 +38,21 @@
           "alexa_targets": "Alexa targets"
         }
       },
+      "edit_group": {
+        "title": "Edit speech group",
+        "data": {
+          "name": "Group"
+        }
+      },
+      "edit_group_details": {
+        "title": "Edit speech group",
+        "description": "Choose Home Assistant media players. Alexa targets are optional comma-separated target names for notify.alexa_media.",
+        "data": {
+          "name": "Group name",
+          "media_player_entity_ids": "Media players",
+          "alexa_targets": "Alexa targets"
+        }
+      },
       "remove_group": {
         "title": "Remove speech group",
         "data": {
@@ -46,4 +62,3 @@
     }
   }
 }
-

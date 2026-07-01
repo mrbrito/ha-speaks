@@ -62,6 +62,8 @@ class HaSpeaksConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class HaSpeaksOptionsFlow(config_entries.OptionsFlow):
+    _selected_group_name: str | None = None
+
     async def async_step_init(
         self,
         user_input: dict[str, Any] | None = None,
@@ -79,6 +81,7 @@ class HaSpeaksOptionsFlow(config_entries.OptionsFlow):
             {"value": "add_group", "label": "Add speech group"},
         ]
         if self.options.get(CONF_GROUPS):
+            actions.append({"value": "edit_group", "label": "Edit speech group"})
             actions.append({"value": "remove_group", "label": "Remove speech group"})
         actions.append({"value": "finish", "label": "Finish"})
 
@@ -91,6 +94,9 @@ class HaSpeaksOptionsFlow(config_entries.OptionsFlow):
                     )
                 }
             ),
+            description_placeholders={
+                "groups": _group_summary(self.options.get(CONF_GROUPS, []))
+            },
         )
 
     async def async_step_settings(
@@ -145,15 +151,57 @@ class HaSpeaksOptionsFlow(config_entries.OptionsFlow):
 
         return self.async_show_form(
             step_id="add_group",
-            data_schema=vol.Schema(
+            data_schema=_group_schema(),
+        )
+
+    async def async_step_edit_group(
+        self,
+        user_input: dict[str, Any] | None = None,
+    ):
+        groups = list(self.options.get(CONF_GROUPS, []))
+        group_names = [_group_name(group) for group in groups]
+
+        if user_input is not None:
+            self._selected_group_name = user_input[CONF_NAME]
+            return await self.async_step_edit_group_details()
+
+        return self.async_show_form(
+            step_id="edit_group",
+            data_schema=vol.Schema({vol.Required(CONF_NAME): vol.In(group_names)}),
+        )
+
+    async def async_step_edit_group_details(
+        self,
+        user_input: dict[str, Any] | None = None,
+    ):
+        groups = list(self.options.get(CONF_GROUPS, []))
+        selected = self._find_group(groups, self._selected_group_name)
+
+        if selected is None:
+            return await self.async_step_init()
+
+        if user_input is not None:
+            updated_name = user_input[CONF_NAME]
+            self.options[CONF_GROUPS] = [
+                group
+                for group in groups
+                if _group_name(group) != self._selected_group_name
+            ]
+            self.options[CONF_GROUPS].append(
                 {
-                    vol.Required(CONF_NAME): str,
-                    vol.Optional(CONF_MEDIA_PLAYER_ENTITY_IDS, default=[]): selector.EntitySelector(
-                        selector.EntitySelectorConfig(domain="media_player", multiple=True)
+                    CONF_NAME: updated_name,
+                    CONF_MEDIA_PLAYER_ENTITY_IDS: user_input.get(
+                        CONF_MEDIA_PLAYER_ENTITY_IDS, []
                     ),
-                    vol.Optional(CONF_ALEXA_TARGETS, default=""): str,
+                    CONF_ALEXA_TARGETS: _csv_to_list(user_input.get(CONF_ALEXA_TARGETS, "")),
                 }
-            ),
+            )
+            self._selected_group_name = None
+            return await self.async_step_init()
+
+        return self.async_show_form(
+            step_id="edit_group_details",
+            data_schema=_group_schema(selected),
         )
 
     async def async_step_remove_group(
@@ -185,6 +233,16 @@ class HaSpeaksOptionsFlow(config_entries.OptionsFlow):
         self.options = dict(self.config_entry.options)
         self.options.setdefault(CONF_GROUPS, [])
 
+    @staticmethod
+    def _find_group(
+        groups: list[dict[str, Any]],
+        group_name: str | None,
+    ) -> dict[str, Any] | None:
+        for group in groups:
+            if _group_name(group) == group_name:
+                return group
+        return None
+
 
 def _csv_to_list(value: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
@@ -192,3 +250,34 @@ def _csv_to_list(value: str) -> list[str]:
 
 def _group_name(group: dict[str, Any]) -> str:
     return group.get(CONF_NAME, group.get("name", ""))
+
+
+def _group_schema(group: dict[str, Any] | None = None) -> vol.Schema:
+    group = group or {}
+    return vol.Schema(
+        {
+            vol.Required(CONF_NAME, default=_group_name(group)): str,
+            vol.Optional(
+                CONF_MEDIA_PLAYER_ENTITY_IDS,
+                default=group.get(CONF_MEDIA_PLAYER_ENTITY_IDS, []),
+            ): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="media_player", multiple=True)
+            ),
+            vol.Optional(
+                CONF_ALEXA_TARGETS,
+                default=", ".join(group.get(CONF_ALEXA_TARGETS, [])),
+            ): str,
+        }
+    )
+
+
+def _group_summary(groups: list[dict[str, Any]]) -> str:
+    if not groups:
+        return "No speech groups configured."
+
+    lines = []
+    for group in groups:
+        media_count = len(group.get(CONF_MEDIA_PLAYER_ENTITY_IDS, []))
+        alexa_count = len(group.get(CONF_ALEXA_TARGETS, []))
+        lines.append(f"{_group_name(group)}: {media_count} media players, {alexa_count} Alexa targets")
+    return "\n".join(lines)

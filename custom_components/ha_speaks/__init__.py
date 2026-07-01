@@ -21,6 +21,7 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+PLATFORMS = ["sensor"]
 
 GROUP_SCHEMA = vol.Schema(
     {
@@ -64,15 +65,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data[DOMAIN][entry.entry_id] = entry
 
     _register_services(hass)
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
     if not _configured_sources(hass):
         hass.services.async_remove(DOMAIN, SERVICE_ANNOUNCE)
-    return True
+    return unload_ok
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
