@@ -17,6 +17,7 @@ metadata {
         attribute "lastMessage", "string"
         attribute "lastGroup", "string"
         attribute "lastStatus", "string"
+        attribute "speech", "string"
     }
 
     preferences {
@@ -40,15 +41,35 @@ void initialize() {
     sendEvent(name: "lastStatus", value: "initialized")
 }
 
-void speak(String message) {
-    speakToGroup(message, defaultGroup ?: "Everywhere", defaultVolume ?: 8)
+void speak(message) {
+    sendAnnouncement(message?.toString(), defaultGroup ?: "Everywhere", defaultVolume ?: 8)
 }
 
-void sendAnnouncement(String message, String group = null, BigDecimal volume = null) {
+void speak(String message) {
+    sendAnnouncement(message, defaultGroup ?: "Everywhere", defaultVolume ?: 8)
+}
+
+void speak(String message, BigDecimal volume) {
+    sendAnnouncement(message, defaultGroup ?: "Everywhere", volume)
+}
+
+void speak(String message, Integer volume) {
+    sendAnnouncement(message, defaultGroup ?: "Everywhere", volume)
+}
+
+void speak(String message, BigDecimal volume, String voice) {
+    sendAnnouncement(message, defaultGroup ?: "Everywhere", volume)
+}
+
+void speak(String message, Integer volume, String voice) {
+    sendAnnouncement(message, defaultGroup ?: "Everywhere", volume)
+}
+
+void sendAnnouncement(String message, String group = null, volume = null) {
     speakToGroup(message, group ?: defaultGroup ?: "Everywhere", volume ?: defaultVolume ?: 8)
 }
 
-void speakToGroup(String message, String group, BigDecimal volume = null) {
+void speakToGroup(String message, String group, volume = null) {
     if (!message?.trim()) {
         sendEvent(name: "lastStatus", value: "empty message")
         return
@@ -86,6 +107,7 @@ void handleHaResponse(resp, Map data) {
         sendEvent(name: "lastMessage", value: data.message)
         sendEvent(name: "lastGroup", value: data.group)
         sendEvent(name: "lastStatus", value: "ok ${status}")
+        sendEvent(name: "speech", value: data.message)
         if (logEnable) {
             log.debug "HA Speaks announcement accepted: ${status}"
         }
@@ -112,4 +134,3 @@ private Integer normalizeVolume(value) {
     }
     return volume
 }
-
