@@ -6,6 +6,7 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import CONF_NAME
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
@@ -21,6 +22,26 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
+GROUP_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_NAME): cv.string,
+        vol.Optional(CONF_MEDIA_PLAYER_ENTITY_IDS, default=[]): cv.ensure_list,
+        vol.Optional(CONF_ALEXA_TARGETS, default=[]): cv.ensure_list,
+    }
+)
+
+CONFIG_SCHEMA = vol.Schema(
+    {
+        vol.Optional(DOMAIN, default={}): vol.Schema(
+            {
+                vol.Optional(CONF_TTS_ENTITY_ID): cv.string,
+                vol.Optional(CONF_GROUPS, default=[]): vol.All(cv.ensure_list, [GROUP_SCHEMA]),
+            }
+        )
+    },
+    extra=vol.ALLOW_EXTRA,
+)
+
 SERVICE_SCHEMA = vol.Schema(
     {
         vol.Required("message"): cv.string,
@@ -31,25 +52,25 @@ SERVICE_SCHEMA = vol.Schema(
 )
 
 
+async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN]["yaml"] = config.get(DOMAIN, {})
+    _register_services(hass)
+    return True
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = entry
 
-    if not hass.services.has_service(DOMAIN, SERVICE_ANNOUNCE):
-        hass.services.async_register(
-            DOMAIN,
-            SERVICE_ANNOUNCE,
-            _build_announce_handler(hass),
-            schema=SERVICE_SCHEMA,
-        )
-
+    _register_services(hass)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
-    if not hass.data.get(DOMAIN):
+    if not _configured_sources(hass):
         hass.services.async_remove(DOMAIN, SERVICE_ANNOUNCE)
     return True
 
@@ -58,10 +79,22 @@ async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> Non
     await hass.config_entries.async_reload(entry.entry_id)
 
 
+def _register_services(hass: HomeAssistant) -> None:
+    if hass.services.has_service(DOMAIN, SERVICE_ANNOUNCE):
+        return
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_ANNOUNCE,
+        _build_announce_handler(hass),
+        schema=SERVICE_SCHEMA,
+    )
+
+
 def _build_announce_handler(hass: HomeAssistant):
     async def async_handle_announce(call: ServiceCall) -> None:
-        entries = hass.config_entries.async_entries(DOMAIN)
-        if not entries:
+        sources = _configured_sources(hass)
+        if not sources:
             raise HomeAssistantError("HA Speaks is not configured")
 
         message: str = call.data["message"]
@@ -71,10 +104,10 @@ def _build_announce_handler(hass: HomeAssistant):
 
         media_player_entity_ids: list[str] = list(explicit_entities)
         alexa_targets: list[str] = []
-        tts_entity_id = _first_tts_entity(entries)
+        tts_entity_id = _first_tts_entity(sources)
 
         if group_name:
-            group = _find_group(entries, group_name)
+            group = _find_group(sources, group_name)
             if group is None:
                 raise HomeAssistantError(f"Unknown HA Speaks group: {group_name}")
             media_player_entity_ids.extend(group.get(CONF_MEDIA_PLAYER_ENTITY_IDS, []))
@@ -104,19 +137,34 @@ def _build_announce_handler(hass: HomeAssistant):
     return async_handle_announce
 
 
-def _first_tts_entity(entries: list[ConfigEntry]) -> str | None:
-    for entry in entries:
-        value = entry.options.get(CONF_TTS_ENTITY_ID) or entry.data.get(CONF_TTS_ENTITY_ID)
+def _configured_sources(hass: HomeAssistant) -> list[dict[str, Any]]:
+    sources: list[dict[str, Any]] = []
+
+    yaml_config = hass.data.get(DOMAIN, {}).get("yaml") or {}
+    if yaml_config:
+        sources.append(yaml_config)
+
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        merged = dict(entry.data)
+        merged.update(entry.options)
+        sources.append(merged)
+
+    return sources
+
+
+def _first_tts_entity(sources: list[dict[str, Any]]) -> str | None:
+    for source in sources:
+        value = source.get(CONF_TTS_ENTITY_ID)
         if value:
             return value
     return None
 
 
-def _find_group(entries: list[ConfigEntry], group_name: str) -> dict[str, Any] | None:
+def _find_group(sources: list[dict[str, Any]], group_name: str) -> dict[str, Any] | None:
     normalized = group_name.casefold()
-    for entry in entries:
-        for group in entry.options.get(CONF_GROUPS, []):
-            if group.get("name", "").casefold() == normalized:
+    for source in sources:
+        for group in source.get(CONF_GROUPS, []):
+            if group.get(CONF_NAME, group.get("name", "")).casefold() == normalized:
                 return group
     return None
 
@@ -184,4 +232,3 @@ async def _notify_alexa(
         },
         blocking=False,
     )
-

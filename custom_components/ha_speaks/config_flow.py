@@ -5,6 +5,7 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant import config_entries
+from homeassistant.const import CONF_NAME
 from homeassistant.core import callback
 from homeassistant.helpers import selector
 
@@ -57,19 +58,16 @@ class HaSpeaksConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: config_entries.ConfigEntry):
-        return HaSpeaksOptionsFlow(config_entry)
+        return HaSpeaksOptionsFlow()
 
 
 class HaSpeaksOptionsFlow(config_entries.OptionsFlow):
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        self.config_entry = config_entry
-        self.options = dict(config_entry.options)
-        self.options.setdefault(CONF_GROUPS, [])
-
     async def async_step_init(
         self,
         user_input: dict[str, Any] | None = None,
     ):
+        self._ensure_options()
+
         if user_input is not None:
             action = user_input["action"]
             if action == "finish":
@@ -88,11 +86,8 @@ class HaSpeaksOptionsFlow(config_entries.OptionsFlow):
             step_id="init",
             data_schema=vol.Schema(
                 {
-                    vol.Required("action"): selector.SelectSelector(
-                        selector.SelectSelectorConfig(
-                            options=actions,
-                            mode=selector.SelectSelectorMode.LIST,
-                        )
+                    vol.Required("action"): vol.In(
+                        {action["value"]: action["label"] for action in actions}
                     )
                 }
             ),
@@ -115,9 +110,9 @@ class HaSpeaksOptionsFlow(config_entries.OptionsFlow):
             step_id="settings",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_TTS_ENTITY_ID, default=current): selector.SelectSelector(
+                    vol.Required(CONF_TTS_ENTITY_ID, default=current or ""): selector.SelectSelector(
                         selector.SelectSelectorConfig(
-                            options=tts_entities,
+                            options=tts_entities or ([current] if current else []),
                             mode=selector.SelectSelectorMode.DROPDOWN,
                         )
                     )
@@ -134,11 +129,11 @@ class HaSpeaksOptionsFlow(config_entries.OptionsFlow):
             groups = [
                 group
                 for group in groups
-                if group.get("name", "").casefold() != user_input["name"].casefold()
+                if _group_name(group).casefold() != user_input[CONF_NAME].casefold()
             ]
             groups.append(
                 {
-                    "name": user_input["name"],
+                    CONF_NAME: user_input[CONF_NAME],
                     CONF_MEDIA_PLAYER_ENTITY_IDS: user_input.get(
                         CONF_MEDIA_PLAYER_ENTITY_IDS, []
                     ),
@@ -152,7 +147,7 @@ class HaSpeaksOptionsFlow(config_entries.OptionsFlow):
             step_id="add_group",
             data_schema=vol.Schema(
                 {
-                    vol.Required("name"): str,
+                    vol.Required(CONF_NAME): str,
                     vol.Optional(CONF_MEDIA_PLAYER_ENTITY_IDS, default=[]): selector.EntitySelector(
                         selector.EntitySelectorConfig(domain="media_player", multiple=True)
                     ),
@@ -168,25 +163,32 @@ class HaSpeaksOptionsFlow(config_entries.OptionsFlow):
         groups = list(self.options.get(CONF_GROUPS, []))
         if user_input is not None:
             self.options[CONF_GROUPS] = [
-                group for group in groups if group.get("name") != user_input["name"]
+                group for group in groups if _group_name(group) != user_input[CONF_NAME]
             ]
             return await self.async_step_init()
+
+        group_names = [_group_name(group) for group in groups]
 
         return self.async_show_form(
             step_id="remove_group",
             data_schema=vol.Schema(
                 {
-                    vol.Required("name"): selector.SelectSelector(
-                        selector.SelectSelectorConfig(
-                            options=[group["name"] for group in groups],
-                            mode=selector.SelectSelectorMode.DROPDOWN,
-                        )
-                    )
+                    vol.Required(CONF_NAME): vol.In(group_names)
                 }
             ),
         )
+
+    def _ensure_options(self) -> None:
+        if hasattr(self, "options"):
+            return
+
+        self.options = dict(self.config_entry.options)
+        self.options.setdefault(CONF_GROUPS, [])
 
 
 def _csv_to_list(value: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 
+
+def _group_name(group: dict[str, Any]) -> str:
+    return group.get(CONF_NAME, group.get("name", ""))
