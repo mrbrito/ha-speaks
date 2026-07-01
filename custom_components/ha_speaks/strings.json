@@ -1,0 +1,49 @@
+{
+  "title": "HA Speaks",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up HA Speaks",
+        "description": "Choose the TTS entity HA Speaks should use for media player announcements.",
+        "data": {
+          "tts_entity_id": "TTS entity"
+        }
+      }
+    },
+    "error": {
+      "no_tts_entities": "No TTS entities were found. Add a TTS integration first."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Configure HA Speaks",
+        "data": {
+          "action": "Action"
+        }
+      },
+      "settings": {
+        "title": "Settings",
+        "data": {
+          "tts_entity_id": "TTS entity"
+        }
+      },
+      "add_group": {
+        "title": "Add speech group",
+        "data": {
+          "name": "Group name",
+          "media_player_entity_ids": "Media players",
+          "alexa_targets": "Alexa targets"
+        },
+        "description": "Alexa targets are optional comma-separated target names for notify.alexa_media."
+      },
+      "remove_group": {
+        "title": "Remove speech group",
+        "data": {
+          "name": "Group"
+        }
+      }
+    }
+  }
+}
+
