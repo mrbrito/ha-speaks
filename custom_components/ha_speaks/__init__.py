@@ -46,7 +46,7 @@ SERVICE_SCHEMA = vol.Schema(
     {
         vol.Required("message"): cv.string,
         vol.Optional("group"): cv.string,
-        vol.Optional("volume"): vol.All(vol.Coerce(float), vol.Range(min=0, max=10)),
+        vol.Optional("volume"): vol.All(vol.Coerce(float), vol.Range(min=0, max=100)),
         vol.Optional(CONF_MEDIA_PLAYER_ENTITY_IDS): cv.ensure_list,
     }
 )
@@ -187,7 +187,7 @@ async def _set_volume(
     await hass.services.async_call(
         "media_player",
         "volume_set",
-        {"volume_level": volume / 10},
+        {"volume_level": volume / 100},
         target={"entity_id": media_player_entity_ids},
         blocking=False,
     )

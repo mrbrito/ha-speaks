@@ -16,12 +16,12 @@ announce:
         text:
     volume:
       name: Volume
-      description: Announcement volume from 0 to 10.
+      description: Announcement volume from 0 to 100.
       required: false
       selector:
         number:
           min: 0
-          max: 10
+          max: 100
           mode: slider
     media_player_entity_ids:
       name: Media players
@@ -31,4 +31,3 @@ announce:
         entity:
           domain: media_player
           multiple: true
-

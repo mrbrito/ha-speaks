@@ -1,17 +1,18 @@
 metadata {
     definition(name: "HA Speaks Speech Engine", namespace: "ha-speaks", author: "Luis + Codex") {
         capability "SpeechSynthesis"
+        capability "AudioVolume"
         capability "Actuator"
 
         command "speakToGroup", [
             [name: "Message", type: "STRING", description: "Text to announce"],
             [name: "Group", type: "STRING", description: "HA Speaks group name"],
-            [name: "Volume", type: "NUMBER", description: "0-10 volume"]
+            [name: "Volume", type: "NUMBER", description: "0-100 volume"]
         ]
         command "sendAnnouncement", [
             [name: "Message", type: "STRING", description: "Text to announce"],
             [name: "Group", type: "STRING", description: "HA Speaks group name"],
-            [name: "Volume", type: "NUMBER", description: "0-10 volume"]
+            [name: "Volume", type: "NUMBER", description: "0-100 volume"]
         ]
 
         attribute "lastMessage", "string"
@@ -24,7 +25,7 @@ metadata {
         input name: "haBaseUrl", type: "text", title: "Home Assistant base URL", required: true, description: "Example: http://homeassistant.local:8123"
         input name: "haToken", type: "password", title: "Home Assistant long-lived access token", required: true
         input name: "defaultGroup", type: "text", title: "Default HA Speaks group", required: false, defaultValue: "Everywhere"
-        input name: "defaultVolume", type: "number", title: "Default volume 0-10", required: false, defaultValue: 8, range: "0..10"
+        input name: "defaultVolume", type: "number", title: "Default volume 0-100", required: false, defaultValue: 80, range: "0..100"
         input name: "logEnable", type: "bool", title: "Enable debug logging", required: false, defaultValue: true
     }
 }
@@ -38,15 +39,20 @@ void updated() {
 }
 
 void initialize() {
+    if (state.volume == null) {
+        state.volume = configuredDefaultVolume()
+    }
+    sendEvent(name: "volume", value: state.volume, unit: "%")
+    sendEvent(name: "mute", value: state.volume == 0 ? "muted" : "unmuted")
     sendEvent(name: "lastStatus", value: "initialized")
 }
 
 void speak(message) {
-    sendAnnouncement(message?.toString(), defaultGroup ?: "Everywhere", defaultVolume ?: 8)
+    sendAnnouncement(message?.toString(), defaultGroup ?: "Everywhere", currentVolume())
 }
 
 void speak(String message) {
-    sendAnnouncement(message, defaultGroup ?: "Everywhere", defaultVolume ?: 8)
+    sendAnnouncement(message, defaultGroup ?: "Everywhere", currentVolume())
 }
 
 void speak(String message, BigDecimal volume) {
@@ -66,7 +72,7 @@ void speak(String message, Integer volume, String voice) {
 }
 
 void sendAnnouncement(String message, String group = null, volume = null) {
-    speakToGroup(message, group ?: defaultGroup ?: "Everywhere", volume ?: defaultVolume ?: 8)
+    speakToGroup(message, group ?: defaultGroup ?: "Everywhere", volume != null ? volume : currentVolume())
 }
 
 void speakToGroup(String message, String group, volume = null) {
@@ -75,7 +81,7 @@ void speakToGroup(String message, String group, volume = null) {
         return
     }
 
-    Integer boundedVolume = normalizeVolume(volume ?: defaultVolume ?: 8)
+    Integer boundedVolume = normalizeVolume(volume != null ? volume : currentVolume())
     Map payload = [
         message: message,
         group: group ?: defaultGroup ?: "Everywhere",
@@ -129,8 +135,41 @@ private Integer normalizeVolume(value) {
     if (volume < 0) {
         return 0
     }
-    if (volume > 10) {
-        return 10
+    if (volume > 100) {
+        return 100
     }
     return volume
+}
+
+void setVolume(volume) {
+    Integer boundedVolume = normalizeVolume(volume)
+    state.volume = boundedVolume
+    sendEvent(name: "volume", value: boundedVolume, unit: "%")
+    sendEvent(name: "mute", value: boundedVolume == 0 ? "muted" : "unmuted")
+    sendEvent(name: "lastStatus", value: "volume set ${boundedVolume}")
+}
+
+void volumeUp() {
+    setVolume(currentVolume() + 5)
+}
+
+void volumeDown() {
+    setVolume(currentVolume() - 5)
+}
+
+void mute() {
+    state.preMuteVolume = currentVolume()
+    setVolume(0)
+}
+
+void unmute() {
+    setVolume(state.preMuteVolume != null ? state.preMuteVolume : configuredDefaultVolume())
+}
+
+private Integer currentVolume() {
+    return normalizeVolume(state.volume != null ? state.volume : configuredDefaultVolume())
+}
+
+private Integer configuredDefaultVolume() {
+    return normalizeVolume(defaultVolume != null ? defaultVolume : 80)
 }

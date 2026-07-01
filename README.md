@@ -40,10 +40,10 @@ service: ha_speaks.announce
 data:
   message: "Message text goes here"
   group: "Everywhere"
-  volume: 8
+  volume: 80
 ```
 
-`volume` is a Hubitat-style 0-10 value and is mapped to Home Assistant's
+`volume` is a Hubitat-style 0-100 value and is mapped to Home Assistant's
 0.0-1.0 media player volume scale.
 
 You can also bypass groups:
@@ -66,6 +66,7 @@ data:
    - Home Assistant base URL, such as `http://homeassistant.local:8123`
    - A Home Assistant long-lived access token
    - Default group, such as `Everywhere`
+   - Default volume, such as `80`
 
 The Hubitat driver implements `SpeechSynthesis.speak(message)`, plus
 `speakToGroup(message, group, volume)`.
@@ -77,4 +78,3 @@ The common path is the Alexa Media Player custom integration, which exposes
 `notify.alexa_media`. HA Speaks can call that service for configured Alexa
 targets, but this path depends on the service being available in your Home
 Assistant instance.
-
