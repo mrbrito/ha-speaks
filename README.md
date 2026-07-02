@@ -34,6 +34,11 @@ Configured speech groups appear as HA Speaks sensor entities. The sensor state
 is the number of targets in the group, and the attributes list the media players
 and optional Alexa targets assigned to that group.
 
+HA Speaks includes local Home Assistant brand assets in
+`custom_components/ha_speaks/brand`. If the integration page still shows
+`icon not available` after updating, restart Home Assistant and hard-refresh the
+browser so the frontend requests the new brand image.
+
 For Amazon Echo devices, install the Alexa Media Player custom integration. Once
 it is configured, Echo devices should appear in Home Assistant as
 `media_player` entities. Add those devices to the group's **Alexa media
