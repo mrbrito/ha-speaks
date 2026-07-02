@@ -5,6 +5,8 @@ driver. Hubitat sends a simple speech request to Home Assistant, and Home
 Assistant fans it out to configured speech groups such as `Everywhere` or
 `Downstairs`.
 
+![HA Speaks icon](custom_components/ha_speaks/brand/icon.png)
+
 This first version focuses on Home Assistant `media_player` targets, including
 Google Cast devices, using Home Assistant's TTS service. It also includes an
 optional Alexa Media Player notification path for Echo announcements if that
@@ -18,6 +20,12 @@ custom integration is installed in Home Assistant.
 3. Go to **Settings > Devices & services > Add integration** and add
    **HA Speaks**.
 4. Open **Configure** on the integration to add speech groups.
+
+## HACS Custom Repository Install
+
+After this project is published to GitHub, add the repository to HACS as a
+custom repository with category **Integration**. HACS will install the
+`custom_components/ha_speaks` integration directory.
 
 Each group can include Home Assistant `media_player` entities. For Google Home
 devices, use the entities created by the Google Cast integration.
