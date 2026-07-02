@@ -4,10 +4,10 @@
   "codeowners": [],
   "config_flow": true,
   "dependencies": ["tts"],
-  "documentation": "https://github.com/luis/ha-speaks",
+  "documentation": "https://github.com/mrbrito/ha-speaks",
   "integration_type": "hub",
   "iot_class": "local_push",
-  "issue_tracker": "https://github.com/luis/ha-speaks/issues",
+  "issue_tracker": "https://github.com/mrbrito/ha-speaks/issues",
   "requirements": [],
   "version": "0.3.0"
 }
