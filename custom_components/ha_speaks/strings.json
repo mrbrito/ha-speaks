@@ -35,6 +35,7 @@
           "name": "Group name",
           "media_player_entity_ids": "TTS media players",
           "alexa_media_player_entity_ids": "Alexa media players",
+          "alexa_notification_type": "Alexa notification type",
           "alexa_targets": "Alexa targets"
         },
         "description": "TTS media players use Home Assistant TTS. Alexa media players use notify.alexa_media. Alexa targets are optional comma-separated advanced targets."
@@ -52,6 +53,7 @@
           "name": "Group name",
           "media_player_entity_ids": "TTS media players",
           "alexa_media_player_entity_ids": "Alexa media players",
+          "alexa_notification_type": "Alexa notification type",
           "alexa_targets": "Alexa targets"
         }
       },

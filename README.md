@@ -88,8 +88,30 @@ data:
   message: "Dinner is ready"
   alexa_media_player_entity_ids:
     - media_player.kitchen_echo
+  alexa_notification_type: tts
   volume: 60
 ```
+
+## Synchronization and Chimes
+
+HA Speaks dispatches Google/Cast TTS targets and Alexa notification targets in
+parallel to reduce avoidable delay. True sample-accurate synchronization across
+individual Google speakers, Echo speakers, and mixed platforms is not something
+Home Assistant can guarantee because each platform buffers and starts playback
+independently.
+
+For the best Google-only timing, create a native Google speaker group in the
+Google Home app and add that group media player to HA Speaks instead of adding
+each speaker individually. Native speaker groups are synchronized by Google
+before Home Assistant sends audio to them.
+
+Alexa groups can use two notification modes:
+
+- `announce`: Alexa announcement behavior, usually with the announcement chime.
+- `tts`: plain Alexa TTS behavior, generally without the announcement chime.
+
+Select the Alexa notification type when editing a HA Speaks group, or override
+it per service call with `alexa_notification_type`.
 
 ## Hubitat Install
 

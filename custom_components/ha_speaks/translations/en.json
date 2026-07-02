@@ -36,6 +36,7 @@
           "name": "Group name",
           "media_player_entity_ids": "TTS media players",
           "alexa_media_player_entity_ids": "Alexa media players",
+          "alexa_notification_type": "Alexa notification type",
           "alexa_targets": "Alexa targets"
         }
       },
@@ -52,6 +53,7 @@
           "name": "Group name",
           "media_player_entity_ids": "TTS media players",
           "alexa_media_player_entity_ids": "Alexa media players",
+          "alexa_notification_type": "Alexa notification type",
           "alexa_targets": "Alexa targets"
         }
       },

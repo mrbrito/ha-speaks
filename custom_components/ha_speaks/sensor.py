@@ -11,6 +11,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
     CONF_ALEXA_MEDIA_PLAYER_ENTITY_IDS,
+    CONF_ALEXA_NOTIFICATION_TYPE,
     CONF_ALEXA_TARGETS,
     CONF_GROUPS,
     CONF_MEDIA_PLAYER_ENTITY_IDS,
@@ -64,6 +65,7 @@ class HaSpeaksGroupSensor(SensorEntity):
             "group": self._group_name,
             "media_player_entity_ids": self._media_players,
             "alexa_media_player_entity_ids": self._alexa_media_players,
+            "alexa_notification_type": self._alexa_notification_type,
             "alexa_targets": self._alexa_targets,
             "media_player_count": len(self._media_players),
             "alexa_media_player_count": len(self._alexa_media_players),
@@ -77,6 +79,10 @@ class HaSpeaksGroupSensor(SensorEntity):
     @property
     def _alexa_media_players(self) -> list[str]:
         return list(self._group.get(CONF_ALEXA_MEDIA_PLAYER_ENTITY_IDS, []))
+
+    @property
+    def _alexa_notification_type(self) -> str:
+        return self._group.get(CONF_ALEXA_NOTIFICATION_TYPE, "announce")
 
     @property
     def _alexa_targets(self) -> list[str]:

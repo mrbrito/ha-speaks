@@ -23,6 +23,17 @@ announce:
           min: 0
           max: 100
           mode: slider
+    alexa_notification_type:
+      name: Alexa notification type
+      description: Use announce for the Alexa announcement chime, or tts for speech without the announcement chime.
+      required: false
+      selector:
+        select:
+          options:
+            - label: Announce with chime
+              value: announce
+            - label: TTS without announcement chime
+              value: tts
     media_player_entity_ids:
       name: TTS media players
       description: Optional explicit media player entity IDs for Home Assistant TTS.
