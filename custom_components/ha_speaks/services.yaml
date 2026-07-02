@@ -24,8 +24,16 @@ announce:
           max: 100
           mode: slider
     media_player_entity_ids:
-      name: Media players
-      description: Optional explicit media player entity IDs.
+      name: TTS media players
+      description: Optional explicit media player entity IDs for Home Assistant TTS.
+      required: false
+      selector:
+        entity:
+          domain: media_player
+          multiple: true
+    alexa_media_player_entity_ids:
+      name: Alexa media players
+      description: Optional explicit Alexa Media Player entity IDs for notify.alexa_media announcements.
       required: false
       selector:
         entity:

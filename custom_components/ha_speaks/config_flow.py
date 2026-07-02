@@ -10,6 +10,7 @@ from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from .const import (
+    CONF_ALEXA_MEDIA_PLAYER_ENTITY_IDS,
     CONF_ALEXA_TARGETS,
     CONF_GROUPS,
     CONF_MEDIA_PLAYER_ENTITY_IDS,
@@ -143,6 +144,9 @@ class HaSpeaksOptionsFlow(config_entries.OptionsFlow):
                     CONF_MEDIA_PLAYER_ENTITY_IDS: user_input.get(
                         CONF_MEDIA_PLAYER_ENTITY_IDS, []
                     ),
+                    CONF_ALEXA_MEDIA_PLAYER_ENTITY_IDS: user_input.get(
+                        CONF_ALEXA_MEDIA_PLAYER_ENTITY_IDS, []
+                    ),
                     CONF_ALEXA_TARGETS: _csv_to_list(user_input.get(CONF_ALEXA_TARGETS, "")),
                 }
             )
@@ -192,6 +196,9 @@ class HaSpeaksOptionsFlow(config_entries.OptionsFlow):
                     CONF_NAME: updated_name,
                     CONF_MEDIA_PLAYER_ENTITY_IDS: user_input.get(
                         CONF_MEDIA_PLAYER_ENTITY_IDS, []
+                    ),
+                    CONF_ALEXA_MEDIA_PLAYER_ENTITY_IDS: user_input.get(
+                        CONF_ALEXA_MEDIA_PLAYER_ENTITY_IDS, []
                     ),
                     CONF_ALEXA_TARGETS: _csv_to_list(user_input.get(CONF_ALEXA_TARGETS, "")),
                 }
@@ -264,6 +271,12 @@ def _group_schema(group: dict[str, Any] | None = None) -> vol.Schema:
                 selector.EntitySelectorConfig(domain="media_player", multiple=True)
             ),
             vol.Optional(
+                CONF_ALEXA_MEDIA_PLAYER_ENTITY_IDS,
+                default=group.get(CONF_ALEXA_MEDIA_PLAYER_ENTITY_IDS, []),
+            ): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="media_player", multiple=True)
+            ),
+            vol.Optional(
                 CONF_ALEXA_TARGETS,
                 default=", ".join(group.get(CONF_ALEXA_TARGETS, [])),
             ): str,
@@ -278,6 +291,10 @@ def _group_summary(groups: list[dict[str, Any]]) -> str:
     lines = []
     for group in groups:
         media_count = len(group.get(CONF_MEDIA_PLAYER_ENTITY_IDS, []))
-        alexa_count = len(group.get(CONF_ALEXA_TARGETS, []))
-        lines.append(f"{_group_name(group)}: {media_count} media players, {alexa_count} Alexa targets")
+        alexa_count = len(group.get(CONF_ALEXA_MEDIA_PLAYER_ENTITY_IDS, []))
+        manual_alexa_count = len(group.get(CONF_ALEXA_TARGETS, []))
+        lines.append(
+            f"{_group_name(group)}: {media_count} TTS media players, "
+            f"{alexa_count} Alexa media players, {manual_alexa_count} manual Alexa targets"
+        )
     return "\n".join(lines)

@@ -12,6 +12,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 
 from .const import (
+    CONF_ALEXA_MEDIA_PLAYER_ENTITY_IDS,
     CONF_ALEXA_TARGETS,
     CONF_GROUPS,
     CONF_MEDIA_PLAYER_ENTITY_IDS,
@@ -27,6 +28,7 @@ GROUP_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_NAME): cv.string,
         vol.Optional(CONF_MEDIA_PLAYER_ENTITY_IDS, default=[]): cv.ensure_list,
+        vol.Optional(CONF_ALEXA_MEDIA_PLAYER_ENTITY_IDS, default=[]): cv.ensure_list,
         vol.Optional(CONF_ALEXA_TARGETS, default=[]): cv.ensure_list,
     }
 )
@@ -49,6 +51,7 @@ SERVICE_SCHEMA = vol.Schema(
         vol.Optional("group"): cv.string,
         vol.Optional("volume"): vol.All(vol.Coerce(float), vol.Range(min=0, max=100)),
         vol.Optional(CONF_MEDIA_PLAYER_ENTITY_IDS): cv.ensure_list,
+        vol.Optional(CONF_ALEXA_MEDIA_PLAYER_ENTITY_IDS): cv.ensure_list,
     }
 )
 
@@ -104,8 +107,10 @@ def _build_announce_handler(hass: HomeAssistant):
         group_name: str | None = call.data.get("group")
         volume: float | None = call.data.get("volume")
         explicit_entities = call.data.get(CONF_MEDIA_PLAYER_ENTITY_IDS) or []
+        explicit_alexa_entities = call.data.get(CONF_ALEXA_MEDIA_PLAYER_ENTITY_IDS) or []
 
         media_player_entity_ids: list[str] = list(explicit_entities)
+        alexa_media_player_entity_ids: list[str] = list(explicit_alexa_entities)
         alexa_targets: list[str] = []
         tts_entity_id = _first_tts_entity(sources)
 
@@ -114,15 +119,24 @@ def _build_announce_handler(hass: HomeAssistant):
             if group is None:
                 raise HomeAssistantError(f"Unknown HA Speaks group: {group_name}")
             media_player_entity_ids.extend(group.get(CONF_MEDIA_PLAYER_ENTITY_IDS, []))
+            alexa_media_player_entity_ids.extend(
+                group.get(CONF_ALEXA_MEDIA_PLAYER_ENTITY_IDS, [])
+            )
             alexa_targets.extend(group.get(CONF_ALEXA_TARGETS, []))
 
         media_player_entity_ids = _dedupe(media_player_entity_ids)
+        alexa_media_player_entity_ids = _dedupe(alexa_media_player_entity_ids)
+        alexa_targets = _dedupe(alexa_targets + alexa_media_player_entity_ids)
+
+        all_volume_media_players = _dedupe(
+            media_player_entity_ids + alexa_media_player_entity_ids
+        )
 
         if not media_player_entity_ids and not alexa_targets:
             raise HomeAssistantError("No HA Speaks targets were provided")
 
-        if volume is not None and media_player_entity_ids:
-            await _set_volume(hass, media_player_entity_ids, volume)
+        if volume is not None and all_volume_media_players:
+            await _set_volume(hass, all_volume_media_players, volume)
 
         if media_player_entity_ids:
             if not tts_entity_id:
@@ -135,7 +149,12 @@ def _build_announce_handler(hass: HomeAssistant):
             )
 
         if alexa_targets:
-            await _notify_alexa(hass, alexa_targets, message)
+            await _notify_alexa(
+                hass,
+                alexa_targets,
+                message,
+                require_service=not media_player_entity_ids,
+            )
 
     return async_handle_announce
 
@@ -220,8 +239,13 @@ async def _notify_alexa(
     hass: HomeAssistant,
     alexa_targets: list[str],
     message: str,
+    require_service: bool = False,
 ) -> None:
     if not hass.services.has_service("notify", "alexa_media"):
+        if require_service:
+            raise HomeAssistantError(
+                "notify.alexa_media is not available. Install and configure Alexa Media Player."
+            )
         _LOGGER.warning("notify.alexa_media is not available; skipping Alexa targets")
         return
 

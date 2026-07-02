@@ -26,6 +26,12 @@ Configured speech groups appear as HA Speaks sensor entities. The sensor state
 is the number of targets in the group, and the attributes list the media players
 and optional Alexa targets assigned to that group.
 
+For Amazon Echo devices, install the Alexa Media Player custom integration. Once
+it is configured, Echo devices should appear in Home Assistant as
+`media_player` entities. Add those devices to the group's **Alexa media
+players** field so HA Speaks uses `notify.alexa_media` announcements instead of
+Home Assistant TTS.
+
 ## TTS Setup
 
 The integration calls Home Assistant's modern `tts.speak` service by default.
@@ -59,6 +65,17 @@ data:
   media_player_entity_ids:
     - media_player.kitchen_display
     - media_player.living_room_speaker
+```
+
+For explicit Echo targets:
+
+```yaml
+service: ha_speaks.announce
+data:
+  message: "Dinner is ready"
+  alexa_media_player_entity_ids:
+    - media_player.kitchen_echo
+  volume: 60
 ```
 
 ## Hubitat Install

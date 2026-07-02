@@ -10,6 +10,7 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
+    CONF_ALEXA_MEDIA_PLAYER_ENTITY_IDS,
     CONF_ALEXA_TARGETS,
     CONF_GROUPS,
     CONF_MEDIA_PLAYER_ENTITY_IDS,
@@ -51,21 +52,31 @@ class HaSpeaksGroupSensor(SensorEntity):
 
     @property
     def native_value(self) -> int:
-        return len(self._media_players) + len(self._alexa_targets)
+        return (
+            len(self._media_players)
+            + len(self._alexa_media_players)
+            + len(self._alexa_targets)
+        )
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         return {
             "group": self._group_name,
             "media_player_entity_ids": self._media_players,
+            "alexa_media_player_entity_ids": self._alexa_media_players,
             "alexa_targets": self._alexa_targets,
             "media_player_count": len(self._media_players),
+            "alexa_media_player_count": len(self._alexa_media_players),
             "alexa_target_count": len(self._alexa_targets),
         }
 
     @property
     def _media_players(self) -> list[str]:
         return list(self._group.get(CONF_MEDIA_PLAYER_ENTITY_IDS, []))
+
+    @property
+    def _alexa_media_players(self) -> list[str]:
+        return list(self._group.get(CONF_ALEXA_MEDIA_PLAYER_ENTITY_IDS, []))
 
     @property
     def _alexa_targets(self) -> list[str]:

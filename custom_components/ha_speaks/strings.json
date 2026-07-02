@@ -33,10 +33,11 @@
         "title": "Add speech group",
         "data": {
           "name": "Group name",
-          "media_player_entity_ids": "Media players",
+          "media_player_entity_ids": "TTS media players",
+          "alexa_media_player_entity_ids": "Alexa media players",
           "alexa_targets": "Alexa targets"
         },
-        "description": "Alexa targets are optional comma-separated target names for notify.alexa_media."
+        "description": "TTS media players use Home Assistant TTS. Alexa media players use notify.alexa_media. Alexa targets are optional comma-separated advanced targets."
       },
       "edit_group": {
         "title": "Edit speech group",
@@ -46,10 +47,11 @@
       },
       "edit_group_details": {
         "title": "Edit speech group",
-        "description": "Alexa targets are optional comma-separated target names for notify.alexa_media.",
+        "description": "TTS media players use Home Assistant TTS. Alexa media players use notify.alexa_media. Alexa targets are optional comma-separated advanced targets.",
         "data": {
           "name": "Group name",
-          "media_player_entity_ids": "Media players",
+          "media_player_entity_ids": "TTS media players",
+          "alexa_media_player_entity_ids": "Alexa media players",
           "alexa_targets": "Alexa targets"
         }
       },

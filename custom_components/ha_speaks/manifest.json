@@ -7,5 +7,5 @@
   "documentation": "https://github.com/luis/ha-speaks",
   "iot_class": "local_push",
   "requirements": [],
-  "version": "0.2.0"
+  "version": "0.3.0"
 }
